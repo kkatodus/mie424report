@@ -7,6 +7,7 @@
 \usepackage{placeins} % import float barrier functionality
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{tabularx}
 \hypersetup{hidelinks=true}
 \usepackage{algorithm,algorithmic}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -126,9 +127,7 @@ where $h(r;\theta)$ is the output of the autoencoder after projecting the input 
 where $\theta = \{W_1, W_2, b_1, b_2\}$ are the parameters of the autoencoder and $f$ and $g$ are activation functions. In t
 The parameters learned during this training process can then be used to predict un-observed ratings in the user-item interaction matrix. Because the we can obtain two kinds of vectors from the rating matrix(user-based and item-based) the paper proposes two variants of AutoRec: Item-based AutoRec (I-AutoRec), which models item embeddings and reconstructs user ratings, and User-based AutoRec (U-AutoRec), which models user embeddings and reconstructs item ratings. Compared to previous models, AutoRec introduces several key improvements. First, it offers more efficient training by using gradient-based backpropagation instead of the computationally expensive contrastive divergence required by RBM-CF. Second, it reduces parameter count as it does not require separate parameter estimation for different rating levels, unlike RBM-CF. Finally, AutoRec enables nonlinear representation learning through activation functions such as sigmoid, allowing it to capture more complex user-item interactions compared to traditional matrix factorization, which assumes a linear latent representation.
 
-\textcolor{red}{TODO:move to later part}
 
-AutoRec has several limitations. It is a relatively simple model, and while a deeper version has been tested, the performance improvements are minimal, suggesting that deeper models may require further adjustments to be effective. Additionally, AutoRec does not address the cold-start problem, making it challenging to provide recommendations for new users or items that lack prior ratings. also time series data.
 
 \subsection{Convolutional Sequence Embedding Recommendation Model(Caser)\cite{tang2018personalized}}
 Traditional recommender systems mainly model a user's general preferences based on past interactions and fail to account for sequential dependencies, where more recent interactions are stronger indicators of future behavior. Top-N sequential recommendation addresses this by predicting the next items a user will likely engage with based on their recent activity. The problem is framed as having a set of users $\mathcal{U} = \{u_1, u_2, \cdots, u_{|\mathcal{U}|}\}$ and items $\mathcal{I} = \{i_1, i_2, \cdots, i_{|\mathcal{I}|}\}$, with each user $u$ having a sequence of interactions $S^u = (S_1^u, \cdots, S_{|S^u|}^u)$, where $S_i^u \in \mathcal{I}$ over time. The goal is to recommend the top N items taking the user's recent interaction as well as their general preference into account. This is different from the conventional recommendation system which considers user behaviour as a set of items and not as a sequence of items.
@@ -179,7 +178,29 @@ where $\mathbb{I}$ is an indicator function which they approximate using a sigmo
 
 
 \subsection{Deep Reinforcement Learning Frameworks\cite{zheng_drn_2018}}
-Traditional news recommendation methods is formulated as an optimization problem that maximize the immediate engagement, assuming a fixed user preference. However, this approach fails to optimize long-term user engagement, as news consumption is time-sensitive and user interests evolve over time. Moreover, current recommendations influence future engagement, making only optimizing current reward suboptimal . To achieve sustained engagement over an infinite horizon, the recommendation system is better modeled as a Markov Decision Process (MDP), where the objective is to maximize cumulative future rewards. In this formulation, the state represents a user's recent reading history and current news, the action is recommending some news articles, and the reward is engagement-based metrics. The policy improvement theorem and contraction mapping of state-action value functions (Q-function) guarantee the existence and convergence of the optimal recommendation policy. However, solving this MDP exactly is intractable due to the high-dimensional state-action space, as there are infinitely many news states and infinitely many recommendation combinations. To address this, the authors propose using Deep Q-Networks (DQN) for functional approximation to compress state and action spaces, enabling generalization across unseen states. Further enhancements include Double Q-Learning (DDQN) to mitigate overestimation bias, experience replay for stable learning, activeness scores to dynamically weight user engagement, and Dueling Bandit Gradient Descent (DBGD) to refine exploration-exploitation trade-off via pairwise comparisons. 
+
+This paper introduces a Deep Reinforcement Learning framework for news recommendation, addressing the limitations of previous methods that have:
+\begin{itemize}
+	\item Focuseed on modelling only the current reward, ignoring the long-term impact of recommendations on user.engagement.
+	\item Did not consdider forms of user engagement beyond click / no click labels.
+	\item Kept recommending same items to users, leading to a lack of diversity in recommendations and users to get bored.
+\end{itemize}
+By introducing a Deep Q-Learning (DQN) based framework, the authors have addresed above limitations and modelled the future reward explicitly. They have also considered more feedback information beyond click/no-click labels allowing for more nuanced user engagement information. Finally, they also incorporate an effective exploration strategy to improve the diversity of the recommendations.
+
+In their framework, the model has two stages of training: offline and online. In the offline stage, the model is trained using the user-news clicks logs where the model takes news features, user features, user-news features and context features as input (see full description in table \ref{tab:feature-summary}). Then the model is trained online, interacting with users and updating the network in a 4 step process (details discussed in table \ref{tab:recommendation-process}). At each timestep $t$ the model predicts the total reward for taking an action $a$ given the state $s$ with below equation:
+
+\begin{equation}
+\label{eq:Q function}
+\begin{aligned}
+	y_{s, a, t} = r_{a, t+1} + \gamma Q(s_{a, t+1}, \arg\max_{a'} Q(s_{a, t+1}, a'; W_t); W_t')
+\end{aligned}
+\end{equation}
+
+where $r_{a, t+1}$ is the reward for taking action $a$ at time $t$, $\gamma$ is the discount factor, and $W_t$ and $W_t'$ are two different sets of weights for the DQN. With $W_t$ the model selects the future action $a'$ that maximizes the Q-value, and with $W_t'$ the model estimates the future reward given thate $s_{a, t+1}$ and $a'$ are the next state and action. Every few iterations, $W_t$ and $W_t'$ are switched to reduce overoptimistic estimation of the Q value. Now these Q-networks are split into two subnetworks: $V$ and $A$ where $V$ is the value function and $A$ is the advantage function. The value function takes in teh state features of User features and Context features while the advantage function takes in all of the features. This is due to the observation of the author's that the reward of taking an action $a$ at a certain state $s$ is closely related to all the features but there is a portion of the reward that is solely related to the state features.(e.g. whether this user is active, whether they have read enough news, etc.) 
+	
+
+
+% Traditional news recommendation methods is formulated as an optimization problem that maximize the immediate engagement, assuming a fixed user preference. However, this approach fails to optimize long-term user engagement, as news consumption is time-sensitive and user interests evolve over time. Moreover, current recommendations influence future engagement, making only optimizing current reward suboptimal . To achieve sustained engagement over an infinite horizon, the recommendation system is better modeled as a Markov Decision Process (MDP), where the objective is to maximize cumulative future rewards. In this formulation, the state represents a user's recent reading history and current news, the action is recommending some news articles, and the reward is engagement-based metrics. The policy improvement theorem and contraction mapping of state-action value functions (Q-function) guarantee the existence and convergence of the optimal recommendation policy. However, solving this MDP exactly is intractable due to the high-dimensional state-action space, as there are infinitely many news states and infinitely many recommendation combinations. To address this, the authors propose using Deep Q Learning (DQN) for functional approximation to compress state and action spaces, enabling generalization across unseen states. Further enhancements include Double Q-Learning (DDQN) to mitigate overestimation bias, experience replay for stable learning, activeness scores to dynamically weight user engagement, and Dueling Bandit Gradient Descent (DBGD) to refine exploration-exploitation trade-off via pairwise comparisons. 
 
 
 
@@ -199,6 +220,10 @@ The paper evaluates its GRU-based model on two real-world datasets. One dataset,
 % The GRU-based model is evaluated on RecSys Challenge 2015 (RSC15) and a YouTube-like VIDEO dataset, showing up to a 25\% improvement in Recall@20 compared to state-of-the-art baselines like item-KNN and Bayesian Personalized Ranking Matrix Factorization (BPR-MF). Results indicate that the model effectively captures sequential dependencies, leading to more relevant recommendations. However, it has some limitations: higher training complexity, requiring GPU acceleration for scalability; lack of content-based features, meaning it relies purely on session interactions; and difficulty in hyperparameter tuning, as ranking loss functions require extensive experimentation. Additionally, like most collaborative filtering models, it still suffers from the cold-start problem, struggling to recommend items for new users with no prior interactions.
 
 \subsection{DRL\cite{zheng_drn_2018}}
+
+The paper evaluates its proposed deep reinforcement learning framework using a dataset collected from a commercial news recommendation application. The offline dataset spans six months and includes over half a million users and more than one million news articles, while the online dataset covers one month with tens of thousands of users and hundreds of thousands of news items. In the offline experiments, the data is split temporally—using the most recent two weeks for testing—and the click/no-click ratios are down-sampled for effective model training. The authors conduct experiments to assess recommendation accuracy using metrics such as CTR, nDCG, and Precision@k, and they also analyze the model’s convergence behavior. Additionally, the framework is deployed in a live production environment to evaluate its online performance, where both recommendation accuracy and diversity (measured by an ILS metric) are examined.
+
+
 The proposed method and its enhanced variant, Double DQN (DDQN) + all tricks, outperform all baseline methods, including Logistic Regression (LR), Factorization Machines (FM), Wide \& Deep (W\&D), and bandit-based approaches (LinUCB, HLinUCB). The DDQN model achieves the highest CTR (0.1662) and nDCG (0.4877), demonstrating the effectiveness of reinforcement learning in optimizing long-term engagement. The dueling network architecture improves user-news interaction modeling, while future reward consideration in DDQN leads to additional gains in recommendation accuracy. However, in the offline setting, incorporating user activeness and exploration does not show significant improvements due to dataset limitations, as interactions are static, preventing effective exploration. The authors note that na\"{i}ve exploration strategies like $\varepsilon$-greedy can harm recommendation accuracy, suggesting that exploration should be designed more carefully. The authors propose evaluating the model in an online setting, where user engagement evolves dynamically, allowing better assessment of exploration strategies and activeness-aware recommendations. Additionally, integrating more advanced exploration methods and personalized reward functions could further enhance long-term engagement optimization.
 
 \section{Results and Comparison}
@@ -206,7 +231,16 @@ The proposed method and its enhanced variant, Double DQN (DDQN) + all tricks, ou
 Autorec - reconstructing user-item matrix using autoencoder while minimizing MSE
 
 Caser - using CNN to model sequenctial dependencies and user-item interaction.
+
+RNN - using GRU to model sequential dependencies and user-item interaction.
+
+DRN - using DQN to maxiize the reward fucntion dependant on user engagement 
+
 \subsection{Results comparison}
+
+\textcolor{red}{TODO:move to later part}
+
+AutoRec has several limitations. It is a relatively simple model, and while a deeper version has been tested, the performance improvements are minimal, suggesting that deeper models may require further adjustments to be effective. Additionally, AutoRec does not address the cold-start problem, making it challenging to provide recommendations for new users or items that lack prior ratings. also time series data.
 
 \section{Conclusion and Future work}
 \vfill\pagebreak
@@ -277,8 +311,71 @@ The Caser model architecture is shown in figure \ref{fig:caser-architecture}. Th
 \label{fig:rnn}
 \end{figure}
 
+\subsubsection{RNN model performance}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.5\textwidth]{figures/rnn-performance.png}
+	\caption{Comparison of RNN and other models on different datasets.}
+	\label{fig:rnn-performance}
+\end{figure}
+\FloatBarrier
+\subsection{DRN}
+\subsubsection{DRN model architecture}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{figures/drn-architecture.png}
+\caption{DRL model architecture.}
+\label{fig:drl}
+\end{figure}
+
+\FloatBarrier
+\subsubsection{DRN model feature description}
+
+\begin{table}[ht]
+    \centering
+    \caption{Summary of Feature Dimensions}
+    \begin{tabularx}{\columnwidth}{|l|c|X|}
+    \hline
+    \textbf{Feature Type} & \textbf{Dimension} & \textbf{Description} \\ \hline
+    News features & 417 & One-hot features describing properties of news such as headline, provider, ranking, entity name, category, topic category, and click counts in the last 1 hour, 6 hours, 24 hours, 1 week, and 1 year. \\ \hline
+    User features & 2065 & Features describing user-clicked news properties (headline, provider, ranking, entity name, category, topic category) across 1 hour, 6 hours, 24 hours, 1 week, and 1 year, plus total click counts per time granularity. \\ \hline
+    User news features & 25 & Features describing user-news interactions, specifically frequencies of entities, categories, topic categories, and providers in user's reading history. \\ \hline
+    Context features & 32 & Features describing context at news request time, including time, weekday, and freshness of news (time gap between request and publish time). \\ \hline
+    \end{tabularx}
+    \label{tab:feature-summary}
+\end{table}
 
 
+\FloatBarrier
+\subsubsection{DRN model online learning process}
+
+% ...
+
+\begin{table}[ht]
+    \centering
+    \caption{Overview of Recommendation Process Steps}
+    \begin{tabularx}{\columnwidth}{|c|X|}
+        \hline
+        \textbf{Step} & \textbf{Description} \\ \hline
+        (1) PUSH & At each timestamp ($t_1, t_2, t_3, \dots$), when a user sends a news request to the system, the recommendation agent G takes the feature representation of the current user and news candidates, and generates a top-$k$ list of news to recommend. This list is generated by combining exploitation of the current model and exploration of novel items. \\ \hline
+        (2) FEEDBACK & The user who received recommended news interacts with it by clicking. This generates feedback $B$. \\ \hline
+        (3) MINOR UPDATE & After each timestamp (e.g., after $t_1$), using the feature representations of the previous user and news list $L$, and feedback $B$, agent G compares performance of exploitation network $Q$ and exploration network $\widetilde{Q}$. If $\widetilde{Q}$ outperforms $Q$, the model is updated accordingly; otherwise, $Q$ remains unchanged. This update happens after every recommendation impression. \\ \hline
+        (4) MAJOR UPDATE & After a certain period (e.g., after $t_3$), agent G uses accumulated feedback and activeness scores to update the network $Q$ via experience replay. G maintains a memory of recent historical clicks and user activeness. G samples a batch of records to update the model. \\ \hline
+        (5) REPEAT & Repeat steps (1)–(4). \\ \hline
+    \end{tabularx}
+    \label{tab:recommendation-process}
+\end{table}
+
+\FloatBarrier
+\subsubsection{DRN Q network architecture}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.5\textwidth]{figures/drn-q-architecture.png}
+	\caption{Q network architecture.}
+	\label{fig:drl-q}
+\end{figure}
+	
 
 
 
