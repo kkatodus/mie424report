@@ -31,6 +31,23 @@ J.~Tang and K.~Wang, ``Personalized top-n sequential recommendation via
   convolutional sequence embedding,'' in \emph{Proceedings of the eleventh ACM
   international conference on web search and data mining}, 2018, pp. 565--573.
 
+\bibitem{nais1}
+\BIBentryALTinterwordspacing
+J.~Li, P.~Ren, Z.~Chen, Z.~Ren, and J.~Ma, ``Neural attentive session-based
+  recommendation,'' 2017. [Online]. Available:
+  \url{https://arxiv.org/abs/1711.04725}
+\BIBentrySTDinterwordspacing
+
+\bibitem{fism1}
+\BIBentryALTinterwordspacing
+S.~Kabbur, X.~Ning, and G.~Karypis, ``Fism: factored item similarity models for
+  top-n recommender systems,'' in \emph{Proceedings of the 19th ACM SIGKDD
+  International Conference on Knowledge Discovery and Data Mining}, ser. KDD
+  '13.\hskip 1em plus 0.5em minus 0.4em\relax New York, NY, USA: Association
+  for Computing Machinery, 2013, p. 659–667. [Online]. Available:
+  \url{https://doi.org/10.1145/2487575.2487589}
+\BIBentrySTDinterwordspacing
+
 \bibitem{hidasi2015session}
 B.~Hidasi, A.~Karatzoglou, L.~Baltrunas, and D.~Tikk, ``Session-based
   recommendations with recurrent neural networks,'' \emph{arXiv preprint
